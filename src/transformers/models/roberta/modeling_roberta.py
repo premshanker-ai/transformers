@@ -21,6 +21,7 @@ from typing import List, Optional, Tuple, Union
 import torch
 import torch.utils.checkpoint
 from torch import nn
+from torch.nn.init import xavier_uniform_
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
 from ...activations import ACT2FN, gelu
@@ -1133,16 +1134,17 @@ class RobertaLMHead(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
-        self.layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+        # self.layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
 
         self.decoder = nn.Linear(config.hidden_size, config.vocab_size)
         self.bias = nn.Parameter(torch.zeros(config.vocab_size))
         self.decoder.bias = self.bias
+        torch.nn.init.xavier_uniform_(self.decoder.weight)
 
     def forward(self, features, **kwargs):
         x = self.dense(features)
         x = gelu(x)
-        x = self.layer_norm(x)
+        # x = self.layer_norm(x)
 
         # project back to size of vocabulary with bias
         x = self.decoder(x)
